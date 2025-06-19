@@ -40,127 +40,130 @@ class _AddSleepScreenState extends State<AddSleepScreen> {
         title: Text(widget.existingRecord == null ? '수면 기록 추가' : '수면 기록 수정'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 취침 시간
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.bedtime),
-                title: const Text('취침 시간'),
-                subtitle: Text(
-                  '${_sleepTime.year}/${_sleepTime.month}/${_sleepTime.day} ${_sleepTime.hour}:${_sleepTime.minute.toString().padLeft(2, '0')}',
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 취침 시간
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.bedtime),
+                  title: const Text('취침 시간'),
+                  subtitle: Text(
+                    '${_sleepTime.year}/${_sleepTime.month}/${_sleepTime.day} ${_sleepTime.hour}:${_sleepTime.minute.toString().padLeft(2, '0')}',
+                  ),
+                  onTap: () => _selectDateTime(context, true),
                 ),
-                onTap: () => _selectDateTime(context, true),
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            // 기상 시간
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.wb_sunny),
-                title: const Text('기상 시간'),
-                subtitle: Text(
-                  '${_wakeTime.year}/${_wakeTime.month}/${_wakeTime.day} ${_wakeTime.hour}:${_wakeTime.minute.toString().padLeft(2, '0')}',
+              // 기상 시간
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.wb_sunny),
+                  title: const Text('기상 시간'),
+                  subtitle: Text(
+                    '${_wakeTime.year}/${_wakeTime.month}/${_wakeTime.day} ${_wakeTime.hour}:${_wakeTime.minute.toString().padLeft(2, '0')}',
+                  ),
+                  onTap: () => _selectDateTime(context, false),
                 ),
-                onTap: () => _selectDateTime(context, false),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // 수면의 질
-            Text(
-              '수면의 질',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(5, (index) {
-                final quality = index + 1;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _quality = quality;
-                    });
-                  },
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _quality == quality
-                          ? Theme.of(context).primaryColor
-                          : Colors.grey[300],
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$quality',
-                        style: TextStyle(
-                          color:
-                              _quality == quality ? Colors.white : Colors.black,
-                          fontWeight: FontWeight.bold,
+              // 수면의 질
+              Text(
+                '수면의 질',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(5, (index) {
+                  final quality = index + 1;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _quality = quality;
+                      });
+                    },
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _quality == quality
+                            ? Theme.of(context).primaryColor
+                            : Colors.grey[300],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$quality',
+                          style: TextStyle(
+                            color: _quality == quality
+                                ? Colors.white
+                                : Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 16),
-
-            // 수면 방해 요인
-            Text(
-              '수면 방해 요인',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8.0,
-              children: SleepFactor.all.map((factor) {
-                final isSelected = _selectedFactors.contains(factor);
-                return FilterChip(
-                  label: Text(factor),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        _selectedFactors.add(factor);
-                      } else {
-                        _selectedFactors.remove(factor);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // 메모
-            TextField(
-              controller: _noteController,
-              decoration: const InputDecoration(
-                labelText: '메모',
-                hintText: '수면에 대한 추가 메모를 입력하세요',
-                border: OutlineInputBorder(),
+                  );
+                }),
               ),
-              maxLines: 3,
-            ),
-            const Spacer(),
+              const SizedBox(height: 16),
 
-            // 저장 버튼
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _saveSleepRecord,
-                child: Text(widget.existingRecord == null ? '저장' : '수정'),
+              // 수면 방해 요인
+              Text(
+                '수면 방해 요인',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8.0,
+                children: SleepFactor.all.map((factor) {
+                  final isSelected = _selectedFactors.contains(factor);
+                  return FilterChip(
+                    label: Text(factor),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedFactors.add(factor);
+                        } else {
+                          _selectedFactors.remove(factor);
+                        }
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+
+              // 메모
+              TextField(
+                controller: _noteController,
+                decoration: const InputDecoration(
+                  labelText: '메모',
+                  hintText: '수면에 대한 추가 메모를 입력하세요',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 24),
+
+              // 저장 버튼
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _saveSleepRecord,
+                  child: Text(widget.existingRecord == null ? '저장' : '수정'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

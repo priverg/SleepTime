@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/sleep_goal.dart';
 import '../providers/sleep_provider.dart';
+import 'alarm_settings_screen.dart';
 
 class GoalSettingScreen extends StatefulWidget {
   const GoalSettingScreen({super.key});
@@ -36,47 +37,237 @@ class _GoalSettingScreenState extends State<GoalSettingScreen> {
       appBar: AppBar(
         title: const Text('수면 목표'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          Consumer<SleepProvider>(
+            builder: (context, sleepProvider, child) {
+              return IconButton(
+                icon: const Icon(Icons.alarm),
+                tooltip: '알람 설정',
+                onPressed: sleepProvider.sleepGoal != null
+                    ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AlarmSettingsScreen(),
+                          ),
+                        );
+                      }
+                    : null,
+              );
+            },
+          ),
+        ],
       ),
       body: Consumer<SleepProvider>(
         builder: (context, sleepProvider, child) {
           final currentGoal = sleepProvider.sleepGoal;
           final recentRecords = sleepProvider.getRecentRecords(7);
+          final smartRecommendation =
+              sleepProvider.getSmartAlarmRecommendation();
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 현재 목표 요약
-                if (currentGoal != null) ...[
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (currentGoal != null) ...[
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '현재 수면 목표',
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.alarm),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const AlarmSettingsScreen(),
+                                      ),
+                                    );
+                                  },
+                                  tooltip: '알람 설정',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildGoalItem(
+                                  '취침 시간',
+                                  '${_targetSleepTime.hour}:${_targetSleepTime.minute.toString().padLeft(2, '0')}',
+                                  Icons.bedtime,
+                                ),
+                                _buildGoalItem(
+                                  '기상 시간',
+                                  '${_targetWakeTime.hour}:${_targetWakeTime.minute.toString().padLeft(2, '0')}',
+                                  Icons.wb_sunny,
+                                ),
+                                _buildGoalItem(
+                                  '목표 수면',
+                                  '${_targetHours}시간 ${_targetMinutes}분',
+                                  Icons.timer,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 스마트 추천 카드
+                    if (smartRecommendation['confidence'] > 0.5) ...[
+                      Card(
+                        color: Colors.blue.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.lightbulb,
+                                    color: Colors.blue.shade700,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '스마트 추천',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(smartRecommendation['recommendation']),
+                              if (smartRecommendation['bedtimeAdjustment'] !=
+                                      0 ||
+                                  smartRecommendation['wakeTimeAdjustment'] !=
+                                      0) ...[
+                                const SizedBox(height: 8),
+                                ElevatedButton.icon(
+                                  onPressed: () =>
+                                      _applyRecommendation(smartRecommendation),
+                                  icon: const Icon(Icons.auto_fix_high),
+                                  label: const Text('추천 적용'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue.shade600,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    if (recentRecords.isNotEmpty) ...[
+                      Text(
+                        '최근 7일 목표 달성도',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              _buildAchievementRate(recentRecords, currentGoal),
+                              const SizedBox(height: 16),
+                              _buildAchievementList(recentRecords, currentGoal),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ],
+                  Text(
+                    '목표 설정',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 8),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '현재 수면 목표',
-                            style: Theme.of(context).textTheme.titleMedium,
+                          ListTile(
+                            leading: const Icon(Icons.bedtime),
+                            title: const Text('목표 취침 시간'),
+                            subtitle: Text(
+                              '${_targetSleepTime.hour}:${_targetSleepTime.minute.toString().padLeft(2, '0')}',
+                            ),
+                            onTap: () => _selectTime(context, true),
                           ),
-                          const SizedBox(height: 12),
+                          const Divider(),
+                          ListTile(
+                            leading: const Icon(Icons.wb_sunny),
+                            title: const Text('목표 기상 시간'),
+                            subtitle: Text(
+                              '${_targetWakeTime.hour}:${_targetWakeTime.minute.toString().padLeft(2, '0')}',
+                            ),
+                            onTap: () => _selectTime(context, false),
+                          ),
+                          const Divider(),
+                          ListTile(
+                            leading: const Icon(Icons.timer),
+                            title: const Text('목표 수면 시간'),
+                            subtitle:
+                                Text('${_targetHours}시간 ${_targetMinutes}분'),
+                          ),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              _buildGoalItem(
-                                '취침 시간',
-                                '${_targetSleepTime.hour}:${_targetSleepTime.minute.toString().padLeft(2, '0')}',
-                                Icons.bedtime,
+                              const Text('시간: '),
+                              Expanded(
+                                child: Slider(
+                                  value: _targetHours.toDouble(),
+                                  min: 4,
+                                  max: 12,
+                                  divisions: 8,
+                                  label: '${_targetHours}시간',
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _targetHours = value.round();
+                                    });
+                                  },
+                                ),
                               ),
-                              _buildGoalItem(
-                                '기상 시간',
-                                '${_targetWakeTime.hour}:${_targetWakeTime.minute.toString().padLeft(2, '0')}',
-                                Icons.wb_sunny,
-                              ),
-                              _buildGoalItem(
-                                '목표 수면',
-                                '${_targetHours}시간 ${_targetMinutes}분',
-                                Icons.timer,
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              const Text('분: '),
+                              Expanded(
+                                child: Slider(
+                                  value: _targetMinutes.toDouble(),
+                                  min: 0,
+                                  max: 45,
+                                  divisions: 3,
+                                  label: '${_targetMinutes}분',
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _targetMinutes = value.round();
+                                    });
+                                  },
+                                ),
                               ),
                             ],
                           ),
@@ -85,127 +276,73 @@ class _GoalSettingScreenState extends State<GoalSettingScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // 목표 달성도
-                  if (recentRecords.isNotEmpty) ...[
-                    Text(
-                      '최근 7일 목표 달성도',
-                      style: Theme.of(context).textTheme.titleLarge,
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _saveGoal,
+                      child: const Text('목표 저장'),
                     ),
+                  ),
+                  if (currentGoal != null) ...[
                     const SizedBox(height: 8),
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            _buildAchievementRate(recentRecords, currentGoal),
-                            const SizedBox(height: 16),
-                            _buildAchievementList(recentRecords, currentGoal),
-                          ],
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AlarmSettingsScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.alarm),
+                        label: const Text('알람 설정'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
                   ],
                 ],
-
-                // 목표 설정
-                Text(
-                  '목표 설정',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        // 취침 시간 설정
-                        ListTile(
-                          leading: const Icon(Icons.bedtime),
-                          title: const Text('목표 취침 시간'),
-                          subtitle: Text(
-                            '${_targetSleepTime.hour}:${_targetSleepTime.minute.toString().padLeft(2, '0')}',
-                          ),
-                          onTap: () => _selectTime(context, true),
-                        ),
-                        const Divider(),
-
-                        // 기상 시간 설정
-                        ListTile(
-                          leading: const Icon(Icons.wb_sunny),
-                          title: const Text('목표 기상 시간'),
-                          subtitle: Text(
-                            '${_targetWakeTime.hour}:${_targetWakeTime.minute.toString().padLeft(2, '0')}',
-                          ),
-                          onTap: () => _selectTime(context, false),
-                        ),
-                        const Divider(),
-
-                        // 수면 시간 설정
-                        ListTile(
-                          leading: const Icon(Icons.timer),
-                          title: const Text('목표 수면 시간'),
-                          subtitle:
-                              Text('${_targetHours}시간 ${_targetMinutes}분'),
-                        ),
-                        Row(
-                          children: [
-                            const Text('시간: '),
-                            Expanded(
-                              child: Slider(
-                                value: _targetHours.toDouble(),
-                                min: 4,
-                                max: 12,
-                                divisions: 8,
-                                label: '${_targetHours}시간',
-                                onChanged: (value) {
-                                  setState(() {
-                                    _targetHours = value.round();
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            const Text('분: '),
-                            Expanded(
-                              child: Slider(
-                                value: _targetMinutes.toDouble(),
-                                min: 0,
-                                max: 45,
-                                divisions: 3,
-                                label: '${_targetMinutes}분',
-                                onChanged: (value) {
-                                  setState(() {
-                                    _targetMinutes = value.round();
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Spacer(),
-
-                // 저장 버튼
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _saveGoal,
-                    child: const Text('목표 저장'),
-                  ),
-                ),
-              ],
+              ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _applyRecommendation(Map<String, dynamic> recommendation) {
+    setState(() {
+      if (recommendation['bedtimeAdjustment'] != 0) {
+        final currentMinutes =
+            _targetSleepTime.hour * 60 + _targetSleepTime.minute;
+        final newMinutes = currentMinutes + recommendation['bedtimeAdjustment'];
+        _targetSleepTime = TimeOfDay(
+          hour: (newMinutes ~/ 60) % 24,
+          minute: (newMinutes % 60).toInt(),
+        );
+      }
+
+      if (recommendation['wakeTimeAdjustment'] != 0) {
+        final currentMinutes =
+            _targetWakeTime.hour * 60 + _targetWakeTime.minute;
+        final newMinutes =
+            currentMinutes + recommendation['wakeTimeAdjustment'];
+        _targetWakeTime = TimeOfDay(
+          hour: (newMinutes ~/ 60) % 24,
+          minute: (newMinutes % 60).toInt(),
+        );
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('추천 사항이 적용되었습니다. 목표를 저장해주세요.'),
+        backgroundColor: Colors.blue,
       ),
     );
   }
